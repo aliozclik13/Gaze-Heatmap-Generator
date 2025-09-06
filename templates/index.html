@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <title>Gelişmiş Görsel Dikkat Deneyi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #0b1220; --card: #0f172a; --text: #e5e7eb; --muted: #94a3b8; --primary: #3b82f6; --ok: #10b981; --danger: #ef4444; }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; background: var(--bg); overflow: hidden; }
+        body { font-family: Inter, system-ui, sans-serif; color: var(--text); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        
+        /* --- Ana Arayüz --- */
+        .app { width: min(1100px, 95%); background: linear-gradient(180deg, #0f1724, #0b1220); border-radius: 14px; padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,.5); transition: opacity 0.5s; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .title { display: flex; gap: 12px; align-items: center; }
+        .logo { width:12px; height:12px; border-radius:50%; background:var(--primary); box-shadow:0 0 14px rgba(59,130,246,.25) }
+        h1 { margin: 0; font-size: 18px; }
+        .pid { color: var(--muted); font-size: 13px; }
+        .steps { display: flex; gap: 8px; margin: 12px 0; }
+        .step { background: #071029; padding: 8px 10px; border-radius: 8px; color: #9fb0cc; font-size: 13px; }
+        .step.active { background: #0e2a56; color: #dbeafe; border: 1px solid rgba(59,130,246,.14); }
+        .player { position: relative; border-radius: 10px; overflow: hidden; background: black; border: 1px solid #081227; }
+        .player .video-wrap { width: 100%; aspect-ratio: 16/9; background: black; }
+        video { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; }
+        .controls { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; gap: 12px; }
+        .btn { padding: 10px 14px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; background: var(--primary); color: white; transition: background-color 0.2s; }
+        .btn:disabled { background: #0b1b2f; color: #516a8c; cursor: not-allowed; }
+        .right { display: flex; gap: 12px; align-items: center; }
+        .switch { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 8px; user-select: none; cursor: pointer; }
+
+        /* --- Tam Ekran Deney Elementleri --- */
+        #fullscreen-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            display: none; /* Başlangıçta gizli */
+            justify-content: center; align-items: center;
+            z-index: 9998;
+        }
+        #fullscreen-container video { width: 100%; height: 100%; object-fit: contain; }
+        .fullscreen-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: #000; color: white; z-index: 10000;
+            text-align: center;
+        }
+        .fullscreen-overlay h2 { font-size: 28px; }
+        .fullscreen-overlay p { font-size: 18px; color: var(--muted); }
+        .fullscreen-overlay .button-group { margin-top: 20px; display: flex; gap: 15px; }
+        #countdown { font-size: 72px; font-weight: bold; }
+
+        .gaze-dot { position: fixed; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; background: rgba(59, 130, 246, 0.5); transform: translate(-50%,-50%); pointer-events: none; display: none; z-index: 10002; transition: background-color 0.1s; }
+        .cal-dot { position: fixed; width: 25px; height: 25px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 6px rgba(239,68,68,.12); transform: translate(-50%,-50%); display: none; z-index: 10003; cursor: pointer; transition: transform 0.1s, background-color 0.1s; }
+        .cal-dot:hover { background-color: #f87171; }
+        .cal-dot:active { transform: translate(-50%,-50%) scale(0.8); }
+        
+        #webgazerVideoContainer { position: fixed !important; top: 20px; left: 20px; width: 160px !important; height: 120px !important; z-index: 10001 !important; border: 2px solid var(--primary); border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,.3); overflow: hidden; }
+        #webgazerVideoFeed, #webgazerFaceOverlay { width: 100% !important; height: 100% !important; object-fit: cover; margin: 0 !important; left: 0 !important; top: 0 !important; }
+    </style>
+    <script src="{{ url_for('static', filename='webgazer.js') }}"></script>
+</head>
+<body>
+    <div class="app">
+        <header>
+             <div class="title">
+                <div class="logo"></div>
+                <div>
+                    <h1>Görsel Dikkat Deneyi</h1>
+                    <div class="pid">Katılımcı: <strong id="pidLabel">{{ pid }}</strong> (Test #<strong id="testIdLabel">{{ test_id }}</strong>)</div>
+                </div>
+            </div>
+            <div id="status">Hazır</div>
+        </header>
+        <div class="steps">
+            <div class="step active" id="s1">1. Hazırlık</div>
+            <div class="step" id="s2">2. Kalibrasyon</div>
+            <div class="step" id="s3">3. Doğrulama</div>
+            <div class="step" id="s4">4. Deney</div>
+        </div>
+        <div class="player">
+            <div class="video-wrap">
+                <video id="video" playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate">
+                    <source src="{{ url_for('static', filename='video.mp4') }}" type="video/mp4">
+                    Tarayıcınız video etiketini desteklemiyor.
+                </video>
+            </div>
+        </div>
+        <div class="controls">
+            <div class="left">
+                <button class="btn" id="btnStart">Deneyi Başlat</button>
+                <button class="btn warn" id="btnStop" disabled>Deneyi Durdur</button>
+            </div>
+            <div class="right">
+                <label class="switch"><input type="checkbox" id="chkPreview" checked> Kamera Önizleme</label>
+                <label class="switch"><input type="checkbox" id="chkGaze" checked> Bakış Noktası</label>
+            </div>
+        </div>
+    </div>
+    
+    <div id="fullscreen-container"></div>
+    <div id="calibration-overlay" class="fullscreen-overlay">
+        <h2 id="cal-title">Kalibrasyon</h2>
+        <p id="cal-instruction">Lütfen beliren kırmızı noktanın üzerine tıklayın.</p>
+    </div>
+    <div id="validation-overlay" class="fullscreen-overlay">
+        <h2>Doğruluk Testi</h2>
+        <p>Kalibrasyon doğruluğunu test etmek için lütfen beliren noktalara bakın.<br>Sonuçtan memnun değilseniz yeniden kalibrasyon yapabilirsiniz.</p>
+        <p id="accuracy-report"></p>
+        <div class="button-group">
+            <button id="btnRecalibrate" class="btn">Yeniden Kalibre Et</button>
+            <button id="btnContinue" class="btn">Devam Et</button>
+        </div>
+    </div>
+    <div id="countdown-overlay" class="fullscreen-overlay">
+        <h2 id="countdown">3</h2>
+    </div>
+
+    <div class="gaze-dot" id="gazeDot"></div>
+    <div class="cal-dot" id="calDot"></div>
+
+<script>
+class GazeExperimentApp {
+    constructor() {
+        this.DOM = {
+            appContainer: document.querySelector(".app"),
+            video: document.getElementById("video"),
+            btnStart: document.getElementById("btnStart"),
+            btnStop: document.getElementById("btnStop"),
+            chkPreview: document.getElementById("chkPreview"),
+            chkGaze: document.getElementById("chkGaze"),
+            statusEl: document.getElementById("status"),
+            gazeDot: document.getElementById("gazeDot"),
+            calDot: document.getElementById("calDot"),
+            steps: [document.getElementById("s1"), document.getElementById("s2"), document.getElementById("s3"), document.getElementById("s4")],
+            fullscreenContainer: document.getElementById("fullscreen-container"),
+            calibrationOverlay: document.getElementById("calibration-overlay"),
+            calInstruction: document.getElementById("cal-instruction"),
+            validationOverlay: document.getElementById("validation-overlay"),
+            accuracyReport: document.getElementById("accuracy-report"),
+            btnRecalibrate: document.getElementById("btnRecalibrate"),
+            btnContinue: document.getElementById("btnContinue"),
+            countdownOverlay: document.getElementById("countdown-overlay"),
+            countdown: document.getElementById("countdown"),
+        };
+
+        this.config = {
+            PID: "{{ pid }}",
+            TEST_ID: parseInt("{{ test_id }}", 10),
+            SAMPLE_MS: 100,
+            CALIBRATION_POINTS: [[0.1, 0.1], [0.5, 0.1], [0.9, 0.1], [0.1, 0.5], [0.5, 0.5], [0.9, 0.5], [0.1, 0.9], [0.5, 0.9], [0.9, 0.9]],
+            VALIDATION_POINTS: [[0.3, 0.3], [0.7, 0.3], [0.3, 0.7], [0.7, 0.7]],
+            CLICKS_PER_POINT: 3,
+        };
+
+        this.state = {
+            isRunning: false,
+            sampleTimer: null,
+        };
+
+        this.init();
+    }
+
+    init() {
+        this.DOM.btnStart.addEventListener("click", () => this.start());
+        this.DOM.btnStop.addEventListener("click", () => this.stop("Kullanıcı tarafından durduruldu."));
+        this.DOM.video.addEventListener("ended", () => this.stop("Video tamamlandı."), { once: true });
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && this.state.isRunning) {
+                this.stop("Tam ekrandan çıkıldı.");
+            }
+        });
+        window.addEventListener("beforeunload", () => { if(this.state.isRunning) this.stop(); });
+    }
+
+    setStatus(text) { this.DOM.statusEl.textContent = text; }
+    setStep(index) {
+        this.DOM.steps.forEach((el, idx) => el.classList.toggle("active", idx === index));
+    }
+
+    async start() {
+        if (this.state.isRunning) return;
+        this.state.isRunning = true;
+        this.DOM.btnStart.disabled = true;
+
+        try {
+            await document.documentElement.requestFullscreen();
+            this.DOM.appContainer.style.display = 'none';
+
+            await this.initializeWebGazer();
+            
+            let calibrationSuccess = false;
+            while(!calibrationSuccess) {
+                await this.runCalibration();
+                calibrationSuccess = await this.runValidation();
+            }
+
+            await this.runCountdown();
+            await this.runVideoExperiment();
+
+        } catch (error) {
+            console.error("Deney başlatılırken bir hata oluştu:", error);
+            await this.stop(`Hata: ${error.message}`);
+        }
+    }
+
+    async initializeWebGazer() {
+        this.setStatus("Kamera başlatılıyor...");
+        try {
+            await webgazer.begin();
+        } catch (e) {
+            throw new Error("Kamera başlatılamadı. Lütfen kamera izni verdiğinizden emin olun.");
+        }
+        webgazer.showVideoPreview(this.DOM.chkPreview.checked).showPredictionPoints(false);
+        webgazer.setGazeListener((data, _) => {
+            if (!data || !this.DOM.chkGaze.checked) {
+                this.DOM.gazeDot.style.display = 'none';
+                return;
+            }
+            this.DOM.gazeDot.style.display = 'block';
+            this.DOM.gazeDot.style.left = `${data.x}px`;
+            this.DOM.gazeDot.style.top = `${data.y}px`;
+        });
+    }
+
+    async runCalibration() {
+        this.setStep(1);
+        this.setStatus("Kalibrasyon yapılıyor...");
+        this.DOM.calibrationOverlay.style.display = 'flex';
+        this.DOM.calDot.style.display = 'block';
+
+        for (const point of this.config.CALIBRATION_POINTS) {
+            const [x, y] = [window.innerWidth * point[0], window.innerHeight * point[1]];
+            this.DOM.calDot.style.left = `${x}px`;
+            this.DOM.calDot.style.top = `${y}px`;
+
+            await new Promise(resolve => {
+                let clickCount = 0;
+                const clickHandler = async () => {
+                    clickCount++;
+                    this.DOM.calInstruction.textContent = `Noktaya ${this.config.CLICKS_PER_POINT - clickCount} kez daha tıklayın.`;
+                    await webgazer.recordScreenPosition(x, y, "click");
+                    if (clickCount >= this.config.CLICKS_PER_POINT) {
+                        this.DOM.calDot.removeEventListener('click', clickHandler);
+                        resolve();
+                    }
+                };
+                this.DOM.calInstruction.textContent = `Lütfen beliren kırmızı noktanın üzerine ${this.config.CLICKS_PER_POINT} kez tıklayın.`;
+                this.DOM.calDot.addEventListener('click', clickHandler);
+            });
+        }
+        this.DOM.calDot.style.display = 'none';
+        this.DOM.calibrationOverlay.style.display = 'none';
+    }
+
+    async runValidation() {
+        return new Promise(async (resolve) => {
+            this.setStep(2);
+            this.setStatus("Doğruluk test ediliyor...");
+            this.DOM.validationOverlay.style.display = 'flex';
+            this.DOM.gazeDot.style.display = 'block';
+            let totalDistance = 0;
+
+            for (const point of this.config.VALIDATION_POINTS) {
+                const [x, y] = [window.innerWidth * point[0], window.innerHeight * point[1]];
+                this.DOM.calDot.style.left = `${x}px`;
+                this.DOM.calDot.style.top = `${y}px`;
+                this.DOM.calDot.style.display = 'block';
+                await new Promise(r => setTimeout(r, 1500)); // 1.5 saniye bak
+                
+                const pred = await webgazer.getCurrentPrediction();
+                if (pred) {
+                    const distance = Math.sqrt(Math.pow(pred.x - x, 2) + Math.pow(pred.y - y, 2));
+                    totalDistance += distance;
+                }
+            }
+            
+            const avgError = Math.round(totalDistance / this.config.VALIDATION_POINTS.length);
+            this.DOM.accuracyReport.textContent = `Ortalama Hata: ${avgError} piksel.`;
+            this.DOM.calDot.style.display = 'none';
+
+            this.DOM.btnRecalibrate.onclick = () => {
+                this.DOM.validationOverlay.style.display = 'none';
+                resolve(false); // Kalibrasyon başarısız, tekrarla
+            };
+            this.DOM.btnContinue.onclick = () => {
+                this.DOM.validationOverlay.style.display = 'none';
+                resolve(true); // Kalibrasyon başarılı, devam et
+            };
+        });
+    }
+    
+    async runCountdown() {
+        this.DOM.countdownOverlay.style.display = 'flex';
+        for (let i = 3; i > 0; i--) {
+            this.DOM.countdown.textContent = i;
+            await new Promise(r => setTimeout(r, 1000));
+        }
+        this.DOM.countdownOverlay.style.display = 'none';
+    }
+
+    async runVideoExperiment() {
+        this.setStep(3);
+        this.setStatus("Video oynatılıyor ve veri kaydediliyor...");
+        this.DOM.btnStop.disabled = false;
+        this.DOM.fullscreenContainer.style.display = 'flex';
+        this.DOM.fullscreenContainer.appendChild(this.DOM.video);
+        
+        await this.DOM.video.play();
+        this.startSampling();
+    }
+
+    startSampling() {
+        if (this.state.sampleTimer) clearInterval(this.state.sampleTimer);
+        this.state.sampleTimer = setInterval(async () => {
+            if (this.DOM.video.paused) return;
+            const pred = await webgazer.getCurrentPrediction();
+            if (!pred) return;
+
+            const videoRect = this.DOM.video.getBoundingClientRect();
+            if (pred.x < videoRect.left || pred.x > videoRect.right || pred.y < videoRect.top || pred.y > videoRect.bottom) return;
+
+            const relX = pred.x - videoRect.left;
+            const relY = pred.y - videoRect.top;
+            const scaleX = this.DOM.video.videoWidth / videoRect.width;
+            const scaleY = this.DOM.video.videoHeight / videoRect.height;
+            const vx = Math.round(relX * scaleX);
+            const vy = Math.round(relY * scaleY);
+            
+            const payload = {
+                pid: this.config.PID, test_id: this.config.TEST_ID, time: this.DOM.video.currentTime.toFixed(4),
+                x: vx, y: vy, vw: this.DOM.video.videoWidth, vh: this.DOM.video.videoHeight
+            };
+
+            fetch("/save_gaze", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            }).catch(err => console.error("Veri gönderme hatası:", err));
+        }, this.config.SAMPLE_MS);
+    }
+
+    stopSampling() {
+        if (this.state.sampleTimer) clearInterval(this.state.sampleTimer);
+        this.state.sampleTimer = null;
+    }
+
+    async stop(reason = "Deney durduruldu.") {
+        if (!this.state.isRunning) return;
+        
+        this.stopSampling();
+        if (typeof webgazer !== 'undefined' && webgazer.isReady()) {
+            await webgazer.end();
+        }
+        
+        if (document.fullscreenElement) {
+            await document.exitFullscreen();
+        }
+        
+        document.querySelector('.player .video-wrap').appendChild(this.DOM.video);
+        this.DOM.fullscreenContainer.style.display = 'none';
+        this.DOM.appContainer.style.display = 'flex';
+        
+        this.state.isRunning = false;
+        this.DOM.btnStart.disabled = false;
+        this.DOM.btnStop.disabled = true;
+        this.DOM.video.pause();
+        this.DOM.video.currentTime = 0;
+        
+        this.setStep(0);
+        this.setStatus(reason);
+        this.DOM.gazeDot.style.display = "none";
+    }
+}
+
+new GazeExperimentApp();
+</script>
+</body>
+</html>

@@ -1,84 +1,78 @@
-# **Web Tabanlı Göz Takibi ile Dinamik Dikkat Haritası Üretimi**
+# **Web-Based Eye Tracking for Dynamic Attention Map Generation**
 
-Bu proje, standart bir web kamerası kullanarak dinamik video uyaranları karşısında katılımcıların göz takip verilerini toplayan ve bu verilerden kolektif dikkat haritaları (saliency maps) üreten, baştan sona bütünleşik bir sistemdir. Araştırma, özel donanım gerektirmeyen, erişilebilir ve ölçeklenebilir bir metodoloji sunmayı amaçlamaktadır.
+This project is an end-to-end integrated system that uses a standard webcam to collect participants' eye-tracking data in response to dynamic video stimuli and generates collective attention maps (saliency maps) from this data. The research aims to provide an accessible and scalable methodology that does not require special hardware.
 
-Bu depo, başlıklı bilimsel çalışmada kullanılan yazılımın kaynak kodunu içermektedir.
+This repository contains the source code for the software used in the scientific work titled: \[article title\].
 
-### **✨ Temel Özellikler**
+### **✨ Key Features**
 
-* **Web Tabanlı Veri Toplama:** Katılımcıların deneye herhangi bir modern web tarayıcısı üzerinden katılabilmesi.  
-* **Donanım Bağımsız:** Sadece standart bir web kamerası gerektirir.  
-* **Etkileşimli Kalibrasyon ve Doğrulama:** Yüksek veri doğruluğu için GazeRecorder'dan esinlenilmiş, tıklama tabanlı kalibrasyon ve nicel doğrulama adımları.  
-* **Otomatik Test Yönetimi:** Her katılımcı ve test seansı için verileri otomatik olarak organize eder ve üzerine yazmayı engeller.  
-* **Dinamik Heatmap Üretimi:** Toplanan kolektif verilerden, video üzerine işlenmiş, zamanla değişen dikkat haritaları oluşturur.  
-* **Çoklu Test Desteği:** Farklı test gruplarının (test1, test2 vb.) sonuçlarını ayrı ayrı işler ve karşılaştırmaya olanak tanır.
+* **Web-Based Data Collection:** Participants can join the experiment through any modern web browser.  
+* **Hardware-Independent:** It only requires a standard webcam.  
+* **Interactive Calibration and Validation:** It includes click-based calibration and quantitative validation steps inspired by GazeRecorder for high data accuracy.  
+* **Automatic Test Management:** It automatically organizes data for each participant and test session, preventing overwrites.  
+* **Dynamic Heatmap Generation:** It creates time-varying attention maps, which are overlaid onto the video, from the collected collective data.  
+* **Multiple Test Support:** It processes the results of different test groups (e.g., test1, test2) separately, allowing for comparison.
 
-### **📂 Proje Yapısı**
+### **📂 Project Structure**
 
 .  
 ├── static/  
-│   ├── webgazer.js     \# Göz takip kütüphanesi  
-│   └── video.mp4       \# Deneyde kullanılacak örnek video  
+│   ├── webgazer.js     \# Eye-tracking library  
+│   └── video.mp4       \# Sample video to be used in the experiment  
 ├── templates/  
-│   └── index.html      \# Katılımcının gördüğü web arayüzü  
-├── app.py              \# Veri toplama sunucusu (Flask)  
-├── process\_gaze.py     \# Veri işleme ve heatmap üretme script'i  
-├── requirements.txt    \# Gerekli Python kütüphaneleri  
-└── README.md           \# Bu dosya
+│   └── index.html      \# The web interface seen by the participant  
+├── app.py              \# Data collection server (Flask)  
+├── process\_gaze.py     \# Data processing and heatmap generation script  
+├── requirements.txt    \# Required Python libraries  
+└── README.md           \# This file
 
-### **🚀 Kurulum ve Kullanım**
+### **🚀 Setup and Usage**
 
-Bu projeyi kendi bilgisayarınızda çalıştırmak için aşağıdaki adımları izleyin.
+Follow the steps below to run this project on your computer.
 
-#### **1\. Ön Gereksinimler**
+#### **1\. Prerequisites**
 
-* [Python 3.9](https://www.python.org/downloads/) veya daha üstü  
+* [Python 3.9](https://www.python.org/downloads/) or higher  
 * [Git](https://git-scm.com/downloads/)
 
-#### **2\. Kurulum**
+#### **2\. Installation**
 
-\# 1\. Proje deposunu klonlayın  
-git clone \[https://github.com/senin-kullanici-adin/Gaze-Heatmap-Generator.git\](https://github.com/senin-kullanici-adin/Gaze-Heatmap-Generator.git)  
+Bash  
+\# 1\. Clone the project repository  
+git clone https://github.com/your-username/Gaze-Heatmap-Generator.git  
 cd Gaze-Heatmap-Generator
 
-\# 2\. Bir sanal ortam oluşturup aktive edin (Önerilir)  
+\# 2\. Create and activate a virtual environment (Recommended)  
 python \-m venv venv  
-\# Windows için:  
+\# For Windows:  
 venv\\Scripts\\activate  
-\# macOS/Linux için:  
+\# For macOS/Linux:  
 source venv/bin/activate
 
-\# 3\. Gerekli Python kütüphanelerini yükleyin  
+\# 3\. Install the required Python libraries  
 pip install \-r requirements.txt
 
-#### **3\. Kullanım**
+#### **3\. Usage**
 
-Proje iki ana aşamadan oluşur: Veri Toplama ve Veri İşleme.
+The project consists of two main stages: Data Collection and Data Processing.
 
-**Aşama 1: Veri Toplama**
+**Stage 1: Data Collection**
 
-1. Deneyde kullanacağınız videoyu static/video.mp4 olarak kaydedin.  
-2. Aşağıdaki komutla veri toplama sunucusunu başlatın:  
-   python app.py
+1. Save the video you will use in the experiment as `static/video.mp4`.  
+2. Start the data collection server with the following command: `python app.py`.  
+3. Open a web browser and go to `http://127.0.0.1:5000`.  
+4. You can add a parameter to the URL to specify a participant ID, for example: `http://127.0.0.1:5000/?pid=ali`.  
+5. Follow the instructions on the interface to complete the experiment. The collected data will be saved to the `data/` folder, which is created automatically in the project's root directory.
 
-3. Bir web tarayıcısı açın ve http://127.0.0.1:5000 adresine gidin.  
-4. Katılımcı ID'si belirlemek için URL'ye parametre ekleyebilirsiniz, örneğin: http://127.0.0.1:5000/?pid=ali  
-5. Arayüzdeki talimatları izleyerek deneyi tamamlayın. Toplanan veriler, proje ana dizininde otomatik olarak oluşturulan data/ klasörüne kaydedilecektir.
+**Stage 2: Data Processing and Heatmap Generation**
 
-**Aşama 2: Veri İşleme ve Heatmap Üretimi**
+1. After the data collection is complete, run the following command to generate the attention map video: `python process_gaze.py`.  
+2. The script will automatically find all test groups in the `data/` folder and generate a separate video for each.  
+3. The resulting videos will be saved to the `results/` folder, which is created automatically in the project's root directory, with names like `heatmap_video_test1.mp4`, `heatmap_video_test2.mp4`, etc..
 
-1. Veri toplama işlemi bittikten sonra, aşağıdaki komutu çalıştırarak dikkat haritası videosunu oluşturun:  
-   python process\_gaze.py
+### **📄 Citation**
 
-2. Script, data/ klasöründeki tüm test gruplarını otomatik olarak bulacak ve her biri için ayrı bir video üretecektir.  
-3. Sonuç videoları, proje ana dizininde otomatik olarak oluşturulan results/ klasörüne heatmap\_video\_test1.mp4, heatmap\_video\_test2.mp4 vb. isimlerle kaydedilecektir.
+### **⚖️ License**
 
-### **📄 Atıf (Citation)**
+This project is licensed under the MIT License. See the `LICENSE` file for details.
 
-Bu çalışmayı kendi araştırmanızda kullanırsanız, lütfen aşağıdaki makalemize atıfta bulunun:
-
-\[MAKALE KÜNYESİ BURAYA GELECEK: Yazar(lar), "Makale Başlığı", Yayın Adı, Cilt, Sayı, Sayfa Numaraları, Yıl.\]
-
-### **⚖️ Lisans**
-
-Bu proje MIT Lisansı altında lisanslanmıştır. Detaylar için LICENSE dosyasına bakınız.

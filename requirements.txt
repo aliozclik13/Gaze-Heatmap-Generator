@@ -1,0 +1,8 @@
+Flask
+pandas
+opencv-python
+numpy
+tqdm
+psutil
+GPUtil
+nvidia-ml-py3

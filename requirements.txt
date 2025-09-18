@@ -1,5 +1,0 @@
-Flask
-pandas
-opencv-python
-numpy
-tqdm

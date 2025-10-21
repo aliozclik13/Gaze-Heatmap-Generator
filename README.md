@@ -6,7 +6,7 @@ Participants are tracked in the browser using **WebGazer.js**, and gaze data is 
 ## 🚀 Installation
 
 ```bash
-git clone https://github.com/username/Gaze-Tracking-Experiment.git
+git clone https://github.com/aliozclik13/Gaze-Tracking-Experiment.git
 cd Gaze-Tracking-Experiment
 pip install -r requirements.txt
 ```
